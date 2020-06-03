@@ -27,7 +27,7 @@ const baseUrl = 'https://markmetcalfe.io/city24';
 function runMarksScript() {
     let msg = document.createElement("div");
     msg.id = 'script-running-message';
-    msg.innerHTML = "<div><strike>Stealin</strike><em>Getting</em> the photos!</div><div style=\"font-size:30px\"><em>\"Private property doesn't vibe\" - Karl Marx</em></div>";
+    msg.innerHTML = "<div style=\"width:100vw;text-align:center\"><strike>Stealin</strike><em>Getting</em> the photos!</div><div style=\"font-size:30px\"><em>\"Private property doesn't vibe\" - Karl Marx</em></div>";
     msg.style = "display:flex;position:fixed;top:0;left:0;width:100vw;height:100vh;justify-content:center;z-index:999999999999;align-items:center;font-size:10em;background:white;opacity:0.9;flex-wrap:wrap";
     document.body.insertBefore(msg, document.body.firstChild);
 
