@@ -6,25 +6,32 @@
 // @author       Mark Metcalfe
 // @match        https://www.city24.ee/*
 // @match        https://www.city24.lv/*
-
-
-// @grant        none
+// @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
 (function () {
     'use strict';
 
     // Your code here...
-    let p = document.createElement("button");
-    p.textContent = "Run Marks Script";
-    p.onclick = runMarksScript;
-    p.style = "display:block;position:fixed;top:0;left:0;width:100px;height:50px;z-index:999999999;background:white";
-    document.body.insertBefore(p, document.body.firstChild);
+    let btn = document.createElement("button");
+    btn.id = 'run-script-button';
+    btn.textContent = "Run Marks Script";
+    btn.onclick = runMarksScript;
+    btn.style = "display:block;position:fixed;top:0;left:0;width:100px;height:50px;z-index:999999999;background:white";
+    document.body.insertBefore(btn, document.body.firstChild);
 })();
 
+const timeBetweenPictures = 6000;
+const baseUrl = 'https://markmetcalfe.io/city24';
+
 function runMarksScript() {
+    let msg = document.createElement("div");
+    msg.id = 'script-running-message';
+    msg.innerHTML = "<div><strike>Stealin</strike><em>Getting</em> the photos!</div><div style=\"font-size:30px\"><em>\"Private property doesn't vibe\" - Karl Marx</em></div>";
+    msg.style = "display:flex;position:fixed;top:0;left:0;width:100vw;height:100vh;justify-content:center;z-index:999999999999;align-items:center;font-size:10em;background:white;opacity:0.9;flex-wrap:wrap";
+    document.body.insertBefore(msg, document.body.firstChild);
+
     document.querySelector('.itemTitle h1 span').remove()
-    var marnieFolderName = document.querySelector('.itemTitle h1').textContent;
     document.querySelector('.property_description a.toggle_more').click();
     document.querySelector('.property_description a.toggle_more').remove();
     let desc = document.querySelector('.property_description');
@@ -36,14 +43,15 @@ function runMarksScript() {
 
     document.querySelector('.mapdialog__arrow').click();
     let mapsLink = /^window\.open\(\'([^']+)'/g.exec(document.querySelector('#imageMap').getAttribute('onclick'))[1];
-    html += '<h2>Map</h2><a href="' + mapsLink +'">View on Google Maps</a><br><br>' + document.querySelector('#itemMap').innerHTML;
+    html += '<h2>Map</h2><a href="' + mapsLink + '">View on Google Maps</a><br><br>' + document.querySelector('#itemMap').innerHTML;
 
-    html = '<h1>' + marnieFolderName + '</h1>' + html;
-    document.querySelector('html').innerHTML = encodeURIComponent(html);
+    html = '<h1>' + folderName() + '</h1>' + html;
     addSummary(html);
 
     document.querySelector('.itemImages a').click();
-    getPhotos();
+    setTimeout(function () {
+        getPhotos();
+    }, timeBetweenPictures);
 }
 
 function getPhotos() {
@@ -64,29 +72,43 @@ function getPhotos() {
             clearInterval(interval);
             return;
         }
-    }, 4000);
+    }, timeBetweenPictures);
 }
 
 function addSummary(Html) {
-    let req = GM.xmlHttpRequest({
-        method: "GET",
-        url: 'https://markmetcalfe.io/city24/summary?password=marnie2411&folder=' + marnieFolderName + '&html=' + encodeURIComponent(Html),
+    GM_xmlhttpRequest({
+        method: "POST",
+        url: baseUrl + '/summary',
+        data: JSON.stringify({
+            password: 'marnie2411',
+            folder: folderName(),
+            html: encodeURIComponent(Html)
+        }),
+        headers: {
+            "Content-Type": "application/json;charset=UTF-8"
+        },
         onload: function (xhr) {
-            console.log('Added summary to folder: ' + marnieFolderName);
+            console.log('Added summary to folder: ' + folderName());
         },
     });
-    req.send();
 }
 
 function addImage(URL) {
-    let req = GM.xmlHttpRequest({
-        method: "GET",
-        url: 'https://markmetcalfe.io/city24/add?password=marnie2411&folder=' + marnieFolderName + '&url=' + URL,
+    GM_xmlhttpRequest({
+        method: "POST",
+        url: baseUrl + '/add',
+        data: JSON.stringify({
+            password: 'marnie2411',
+            folder: folderName(),
+            url: encodeURIComponent(URL)
+        }),
+        headers: {
+            "Content-Type": "application/json;charset=UTF-8"
+        },
         onload: function (xhr) {
-            console.log('Added image to folder: ' + marnieFolderName + ' with url: ' + URL);
+            console.log('Added image to folder: ' + folderName() + ' with url: ' + URL);
         },
     });
-    req.send();
 }
 
 function downloadZip() {
@@ -94,16 +116,31 @@ function downloadZip() {
         return "Yo wait up a little...need to delete the photos on the server so i dont run out of room my g";
     }
     setTimeout(function () {
-        let req = GM.xmlHttpRequest({
-            method: "GET",
-            url: 'https://markmetcalfe.io/city24/delete?password=marnie2411&folder=' + marnieFolderName,
+        GM_xmlhttpRequest({
+            method: "POST",
+            url: baseUrl + '/delete',
+            data: JSON.stringify({
+                password: 'marnie2411',
+                folder: folderName()
+            }),
+            headers: {
+                "Content-Type": "application/json;charset=UTF-8"
+            },
             onload: function (xhr) {
-                console.log('Deleted folder: ' + marnieFolderName);
+                console.log('Deleted folder: ' + folderName());
                 window.onbeforeunload = null;
+                document.getElementById('script-running-message').remove();
+                document.getElementById('run-script-button').remove();
             },
         });
-        req.send();
-    }, 2000);
-    let win = window.open('https://markmetcalfe.io/city24/add?password=marnie2411&folder=' + marnieFolderName, '_blank');
-    win.focus();
+    }, timeBetweenPictures * 2);
+    setTimeout(function () {
+        let folderEncoded = encodeURIComponent(folderName());
+        let win = window.open(baseUrl + '/download?password=marnie2411&folder=' + folderEncoded, '_blank');
+        win.focus();
+    }, timeBetweenPictures);
+}
+
+function folderName() {
+    return document.querySelector('.itemTitle h1').textContent.trim()
 }

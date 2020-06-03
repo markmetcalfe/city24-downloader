@@ -9,29 +9,31 @@ import requests
 import shutil
 from xhtml2pdf import pisa
 from urllib.parse import unquote
+import glob
 
 app = Flask(__name__)
 
-@app.route('/summary')
+@app.route('/summary', methods=['POST'])
 def summary():
-    password = request.args.get('password')
+    password = request.json.get('password')
     if password != 'marnie2411':
         return 'Invalid passphrase', 403
 
     if path.exists('/photos') == False:
         os.mkdir('/photos')
 
-    folder = '/photos/' + request.args.get('folder')
+    folderName = request.json.get('folder')
+    folder = '/photos/' + folderName
 
     if path.exists(folder) == False:
         os.mkdir(folder)
 
-    filename = folder + '/listing.pdf'
+    filename = folder + '/' + folderName + ' listing.pdf'
 
     if path.exists(filename) == True:
         os.remove(filename)
 
-    bodyHtml = unquote(request.args.get('html'))
+    bodyHtml = unquote(request.json.get('html'))
     css = 'body {font-family: sans-serif} pre {font-family: inherit} tr{text-align:left} @font-face {font-family: \'Open Sans\', sans-serif; src: url(OpenSans-Regular.ttf)}'
     sourceHtml = '<html><head><style>' + css + '</style></head><body>' + bodyHtml + '</body>'
 
@@ -41,24 +43,25 @@ def summary():
 
     return 'Added pdf', 200
 
-@app.route('/add')
+@app.route('/add', methods=['POST'])
 def add():
-    password = request.args.get('password')
+    password = request.json.get('password')
     if password != 'marnie2411':
         return 'Invalid passphrase', 403
 
     if path.exists('/photos') == False:
         os.mkdir('/photos')
 
-    folder = '/photos/' + request.args.get('folder')
+    folderName = request.json.get('folder')
+    folder = '/photos/' + folderName
 
     if path.exists(folder) == False:
         os.mkdir(folder)
 
-    url = request.args.get('url')
-    imageNum = len(os.listdir(folder)) + 1
+    url = unquote(request.json.get('url'))
+    imageNum = str(len(glob.glob1(folder, "*.jpg")) + 1).zfill(2)
     image = requests.get(url, allow_redirects=False)
-    imageFile = open(folder + '/' + str(imageNum) + '.jpg', 'wb')
+    imageFile = open(folder + '/' + folderName + ' ' + imageNum + '.jpg', 'wb')
     imageFile.write(image.content)
     imageFile.close()
 
@@ -70,7 +73,7 @@ def download():
     if password != 'marnie2411':
         return 'Invalid passphrase', 403
 
-    filename = request.args.get('folder')
+    filename = unquote(request.args.get('folder'))
     directory = '/photos'
     dirfile = directory + '/' + filename
 
@@ -80,13 +83,13 @@ def download():
     shutil.make_archive(dirfile, 'zip', dirfile)
     return send_from_directory(filename=filename + '.zip', directory=directory, mimetype='application/zip', as_attachment=True)
 
-@app.route('/delete')
+@app.route('/delete', methods=['POST'])
 def delete():
-    password = request.args.get('password')
+    password = request.json.get('password')
     if password != 'marnie2411':
         return 'Invalid passphrase', 403
 
-    folder = '/photos/' + request.args.get('folder')
+    folder = '/photos/' + request.json.get('folder')
 
     if path.exists(folder) == False:
         return 'Folder not found', 400
