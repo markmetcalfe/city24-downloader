@@ -7,8 +7,39 @@ from os import path
 import time
 import requests
 import shutil
+from xhtml2pdf import pisa
+from urllib.parse import unquote
 
 app = Flask(__name__)
+
+@app.route('/summary')
+def summary():
+    password = request.args.get('password')
+    if password != 'marnie2411':
+        return 'Invalid passphrase', 403
+
+    if path.exists('/photos') == False:
+        os.mkdir('/photos')
+
+    folder = '/photos/' + request.args.get('folder')
+
+    if path.exists(folder) == False:
+        os.mkdir(folder)
+
+    filename = folder + '/listing.pdf'
+
+    if path.exists(filename) == True:
+        os.remove(filename)
+
+    bodyHtml = unquote(request.args.get('html'))
+    css = 'body {font-family: sans-serif} pre {font-family: inherit} tr{text-align:left} @font-face {font-family: \'Open Sans\', sans-serif; src: url(OpenSans-Regular.ttf)}'
+    sourceHtml = '<html><head><style>' + css + '</style></head><body>' + bodyHtml + '</body>'
+
+    pdfFile = open(filename, 'wb')
+    pisaStatus = pisa.CreatePDF(sourceHtml, dest=pdfFile, encoding='utf-8')
+    pdfFile.close()
+
+    return 'Added pdf', 200
 
 @app.route('/add')
 def add():
@@ -27,9 +58,11 @@ def add():
     url = request.args.get('url')
     imageNum = len(os.listdir(folder)) + 1
     image = requests.get(url, allow_redirects=False)
-    open(folder + '/' + str(imageNum) + '.jpg', 'wb').write(image.content)
+    imageFile = open(folder + '/' + str(imageNum) + '.jpg', 'wb')
+    imageFile.write(image.content)
+    imageFile.close()
 
-    return 'Added', 200
+    return 'Added photo', 200
 
 @app.route('/download')
 def download():
