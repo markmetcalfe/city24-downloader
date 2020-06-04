@@ -9,6 +9,9 @@
 // @grant        GM_xmlhttpRequest
 // ==/UserScript==
 
+const timeBetweenPictures = 6000;
+const baseUrl = 'https://markmetcalfe.io/city24';
+
 (function () {
     'use strict';
 
@@ -21,9 +24,6 @@
     document.body.insertBefore(btn, document.body.firstChild);
 })();
 
-const timeBetweenPictures = 6000;
-const baseUrl = 'https://markmetcalfe.io/city24';
-
 function runMarksScript() {
     let msg = document.createElement("div");
     msg.id = 'script-running-message';
@@ -31,9 +31,11 @@ function runMarksScript() {
     msg.style = "display:flex;position:fixed;top:0;left:0;width:100vw;height:100vh;justify-content:center;z-index:999999999999;align-items:center;font-size:10em;background:white;opacity:0.9;flex-wrap:wrap";
     document.body.insertBefore(msg, document.body.firstChild);
 
-    document.querySelector('.itemTitle h1 span').remove()
-    document.querySelector('.property_description a.toggle_more').click();
-    document.querySelector('.property_description a.toggle_more').remove();
+    document.querySelector('.itemTitle h1 span').remove();
+    if (document.querySelector('.property_description a.toggle_more')) {
+        document.querySelector('.property_description a.toggle_more').click();
+        document.querySelector('.property_description a.toggle_more').remove();
+    }
     let desc = document.querySelector('.property_description');
     let newDesc = document.createElement('div');
     newDesc.innerHTML = desc.innerHTML;
